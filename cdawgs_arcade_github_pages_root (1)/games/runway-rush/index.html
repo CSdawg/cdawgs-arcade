@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Runway Rush</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #243b6b, #101827 60%, #070b12);
+      font-family: Arial, Helvetica, sans-serif;
+      color: white;
+      overflow: hidden;
+    }
+
+    .game-shell {
+      width: min(96vw, 900px);
+      display: grid;
+      gap: 14px;
+    }
+
+    body.game-active .game-shell {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 18px 55px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(10px);
+    }
+
+    body.game-active .top-bar {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 5;
+      padding: 8px 10px;
+      background: rgba(0, 0, 0, 0.22);
+      border-radius: 999px;
+    }
+
+    body.game-active .top-bar h1 {
+      display: none;
+    }
+
+    h1 {
+      font-size: clamp(1.3rem, 3vw, 2rem);
+      letter-spacing: 0.04em;
+    }
+
+    .stats {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      font-weight: 700;
+    }
+
+    body.game-active .stats {
+      gap: 7px;
+    }
+
+    .pill {
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      white-space: nowrap;
+    }
+
+    body.game-active .pill {
+      padding: 7px 10px;
+      font-size: 0.86rem;
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    .fuel-pill {
+      display: none;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+      background: #101827;
+    }
+
+    body.game-active .canvas-wrap {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    canvas {
+      width: 100%;
+      height: min(68vh, 620px);
+      display: block;
+      background: linear-gradient(#142846, #0a1220);
+      outline: none;
+    }
+
+    body.game-active canvas {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(5, 10, 18, 0.62);
+      text-align: center;
+      z-index: 10;
+    }
+
+    .controls-overlay {
+      background: rgba(5, 10, 18, 0.34);
+      z-index: 12;
+    }
+
+    .panel {
+      max-width: 540px;
+      padding: 26px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
+      backdrop-filter: blur(14px);
+    }
+
+    .panel h2 {
+      font-size: clamp(1.6rem, 5vw, 3rem);
+      margin-bottom: 10px;
+    }
+
+    .panel p {
+      line-height: 1.55;
+      color: rgba(255, 255, 255, 0.86);
+      margin-bottom: 16px;
+    }
+
+    .controls-list {
+      display: grid;
+      gap: 9px;
+      margin: 18px 0;
+      text-align: left;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.10);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+    }
+
+    .key {
+      color: #ffd85a;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 999px;
+      padding: 12px 18px;
+      color: #08111f;
+      background: white;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      transition: transform 120ms ease, opacity 120ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(1px);
+      opacity: 0.86;
+    }
+
+    .secondary {
+      color: white;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.20);
+    }
+
+    .hint {
+      font-size: 0.92rem;
+      color: rgba(255, 255, 255, 0.7);
+      text-align: center;
+      line-height: 1.45;
+      user-select: none;
+    }
+
+    body.game-active .hint {
+      position: fixed;
+      left: 50%;
+      bottom: 12px;
+      transform: translateX(-50%);
+      z-index: 6;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 0.8rem;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 640px) {
+      .top-bar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      body.game-active .top-bar {
+        align-items: center;
+        flex-direction: row;
+      }
+
+      .stats {
+        justify-content: flex-start;
+      }
+
+      .control-row {
+        display: grid;
+        gap: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="game-shell">
+    <section class="top-bar">
+      <h1>Runway Rush</h1>
+      <div class="stats">
+        <div class="pill">Score: <span id="score">0</span></div>
+        <div class="pill">Best: <span id="best">0</span></div>
+        <div class="pill fuel-pill">Fuel: <span id="fuel">100</span>%</div>
+      </div>
+    </section>
+
+    <section class="canvas-wrap">
+      <canvas id="gameCanvas" width="900" height="600" tabindex="0" aria-label="Runway Rush game canvas"></canvas>
+
+      <div id="startOverlay" class="overlay">
+        <div class="panel">
+          <h2>Ready for Takeoff?</h2>
+          <p>
+            Fly through a deeper obstacle field, dodge storms, mines, and energy walls, and collect golden fuel orbs.
+            Moving left makes obstacles approach faster. Moving right slows the obstacles down, reaching max slowness by about 30% screen width.
+          </p>
+          <div class="button-row">
+            <button id="startBtn">Start Game</button>
+            <button id="howBtn" class="secondary">Controls</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="gameOverOverlay" class="overlay hidden">
+        <div class="panel">
+          <h2>Mission Ended</h2>
+          <p id="finalText">Final score: 0</p>
+          <div class="button-row">
+            <button id="restartBtn">Restart</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="controlsOverlay" class="overlay controls-overlay hidden">
+        <div class="panel">
+          <h2>Controls</h2>
+          <p>Move left to make obstacles approach faster. Move right to slow the obstacles down by about 30% screen width.</p>
+          <div class="controls-list">
+            <div class="control-row"><span class="key">Arrow Keys / WASD</span><span>Fly the aircraft. A / Left moves twice as fast.</span></div>
+            <div class="control-row"><span class="key">Move Left</span><span>Make obstacles move faster</span></div>
+            <div class="control-row"><span class="key">Move Right</span><span>Reach slowest obstacle speed by about 30% screen width</span></div>
+            <div class="control-row"><span class="key">Space</span><span>Start or restart</span></div>
+            <div class="control-row"><span class="key">P</span><span>Pause or resume</span></div>
+            <div class="control-row"><span class="key">C</span><span>Open or close this controls panel</span></div>
+          </div>
+          <div class="button-row">
+            <button id="closeControlsBtn">Back to Game</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p id="controlHint" class="hint">Press C for controls</p>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const scoreEl = document.getElementById('score');
+    const bestEl = document.getElementById('best');
+    const fuelEl = document.getElementById('fuel');
+    const startOverlay = document.getElementById('startOverlay');
+    const gameOverOverlay = document.getElementById('gameOverOverlay');
+    const controlsOverlay = document.getElementById('controlsOverlay');
+    const finalText = document.getElementById('finalText');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const howBtn = document.getElementById('howBtn');
+    const closeControlsBtn = document.getElementById('closeControlsBtn');
+    const controlHint = document.getElementById('controlHint');
+
+    const keys = new Set();
+    let animationId = null;
+    let gameState = 'menu';
+    let lastTime = 0;
+    let spawnTimer = 0;
+    let fuelTimer = 0;
+    let score = 0;
+    let best = Number(localStorage.getItem('runwayRushBest') || 0);
+    let speedScale = 1;
+    let worldSpeed = 1;
+    let gameplaySpeed = 1;
+    let throttleAmount = 0;
+    let controlsPausedGame = false;
+    let particles = [];
+    let hazards = [];
+    let fuelOrbs = [];
+    let clouds = [];
+
+    bestEl.textContent = best;
+
+    const player = {
+      x: 130,
+      y: 300,
+      w: 42,
+      h: 20,
+      speed: 430,
+      fuel: 100,
+      invincibleTimer: 0
+    };
+
+    let stars = [];
+
+    function randomBetween(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function getForwardLimit() {
+      return canvas.width - 16;
+    }
+
+    function buildStars() {
+      stars = Array.from({ length: 190 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.8 + 0.4,
+        s: Math.random() * 42 + 18
+      }));
+
+      clouds = Array.from({ length: 14 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        w: randomBetween(140, 360),
+        h: randomBetween(22, 58),
+        s: randomBetween(18, 54),
+        a: randomBetween(0.035, 0.085)
+      }));
+    }
+
+    function resizeCanvas() {
+      if (document.body.classList.contains('game-active')) {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      } else {
+        canvas.width = 900;
+        canvas.height = 600;
+      }
+      buildStars();
+      const forwardLimit = getForwardLimit();
+      player.x = clamp(player.x, 16, forwardLimit - player.w);
+      player.y = clamp(player.y, 24, canvas.height - player.h - 48);
+    }
+
+    function openControls() {
+      if (!controlsOverlay.classList.contains('hidden')) return;
+      controlsOverlay.classList.remove('hidden');
+      controlsPausedGame = gameState === 'playing';
+      if (controlsPausedGame) {
+        gameState = 'paused';
+      }
+    }
+
+    function closeControls() {
+      if (controlsOverlay.classList.contains('hidden')) return;
+      controlsOverlay.classList.add('hidden');
+      if (controlsPausedGame && gameState === 'paused') {
+        gameState = 'playing';
+        lastTime = performance.now();
+        cancelAnimationFrame(animationId);
+        animationId = requestAnimationFrame(loop);
+      }
+      controlsPausedGame = false;
+      canvas.focus();
+    }
+
+    function toggleControls() {
+      if (controlsOverlay.classList.contains('hidden')) {
+        openControls();
+      } else {
+        closeControls();
+      }
+    }
+
+    function resetGame() {
+      document.body.classList.add('game-active');
+      resizeCanvas();
+      player.x = Math.max(80, canvas.width * 0.14);
+      player.y = canvas.height / 2;
+      player.fuel = 100;
+      player.invincibleTimer = 1.6;
+      hazards = [];
+      fuelOrbs = [];
+      particles = [];
+      spawnTimer = 0.15;
+      fuelTimer = 1.1;
+      score = 0;
+      speedScale = 1;
+      worldSpeed = 1;
+      gameplaySpeed = 1;
+      throttleAmount = 0;
+      controlsPausedGame = false;
+      controlsOverlay.classList.add('hidden');
+      seedOpeningField();
+      updateHud();
+    }
+
+    function startGame() {
+      resetGame();
+      gameState = 'playing';
+      startOverlay.classList.add('hidden');
+      gameOverOverlay.classList.add('hidden');
+      lastTime = performance.now();
+      canvas.focus();
+      cancelAnimationFrame(animationId);
+      animationId = requestAnimationFrame(loop);
+    }
+
+    function endGame() {
+      gameState = 'gameover';
+      best = Math.max(best, Math.floor(score));
+      localStorage.setItem('runwayRushBest', best);
+      bestEl.textContent = best;
+      finalText.textContent = `Final score: ${Math.floor(score)}. Best score: ${best}.`;
+      gameOverOverlay.classList.remove('hidden');
+    }
+
+    function togglePause() {
+      if (!controlsOverlay.classList.contains('hidden')) return;
+
+      if (gameState === 'playing') {
+        gameState = 'paused';
+      } else if (gameState === 'paused') {
+        gameState = 'playing';
+        lastTime = performance.now();
+        animationId = requestAnimationFrame(loop);
+      }
+    }
+
+    function updateHud() {
+      scoreEl.textContent = Math.floor(score);
+      fuelEl.textContent = Math.max(0, Math.ceil(player.fuel));
+    }
+
+    function makeStorm(x, y, r, speedMult = 1) {
+      return {
+        type: 'storm',
+        x,
+        y,
+        r,
+        speed: randomBetween(145, 250) * speedMult,
+        drift: randomBetween(-70, 70),
+        spin: Math.random() * Math.PI * 2
+      };
+    }
+
+    function makeMine(x, y, r = 18, speedMult = 1) {
+      return {
+        type: 'mine',
+        x,
+        y,
+        r,
+        speed: randomBetween(160, 275) * speedMult,
+        drift: randomBetween(-28, 28),
+        spin: Math.random() * Math.PI * 2
+      };
+    }
+
+    function makeBarrier(x, y, w, h, speedMult = 1) {
+      return {
+        type: 'barrier',
+        x,
+        y,
+        w,
+        h,
+        speed: randomBetween(155, 245) * speedMult,
+        pulse: Math.random() * Math.PI * 2
+      };
+    }
+
+    function seedOpeningField() {
+      for (let i = 0; i < 5; i++) {
+        const x = canvas.width * randomBetween(0.68, 1.24) + i * 110;
+        const y = randomBetween(70, canvas.height - 90);
+        hazards.push(Math.random() > 0.45 ? makeStorm(x, y, randomBetween(28, 54), 0.86) : makeMine(x, y, randomBetween(14, 22), 0.86));
+      }
+    }
+
+    function spawnObstaclePattern() {
+      const pattern = Math.random();
+      const baseX = canvas.width + randomBetween(40, 230);
+
+      if (pattern < 0.28) {
+        hazards.push(makeStorm(baseX, randomBetween(60, canvas.height - 70), randomBetween(32, 66)));
+      } else if (pattern < 0.52) {
+        const centerY = randomBetween(100, canvas.height - 100);
+        const count = Math.floor(randomBetween(3, 6));
+        for (let i = 0; i < count; i++) {
+          hazards.push(makeStorm(
+            baseX + i * randomBetween(58, 88),
+            clamp(centerY + randomBetween(-105, 105), 50, canvas.height - 62),
+            randomBetween(22, 42),
+            0.95
+          ));
+        }
+      } else if (pattern < 0.73) {
+        const gap = randomBetween(145, 210);
+        const gapY = randomBetween(gap / 2 + 45, canvas.height - gap / 2 - 55);
+        const wallW = randomBetween(34, 52);
+        hazards.push(makeBarrier(baseX, 0, wallW, Math.max(0, gapY - gap / 2), 0.94));
+        hazards.push(makeBarrier(baseX, gapY + gap / 2, wallW, Math.max(0, canvas.height - gapY - gap / 2), 0.94));
+      } else if (pattern < 0.90) {
+        const startY = randomBetween(90, canvas.height - 170);
+        const slope = Math.random() > 0.5 ? 1 : -1;
+        for (let i = 0; i < 5; i++) {
+          hazards.push(makeMine(
+            baseX + i * 78,
+            clamp(startY + slope * i * 48 + randomBetween(-18, 18), 44, canvas.height - 56),
+            randomBetween(13, 19),
+            1.05
+          ));
+        }
+      } else {
+        const topLane = randomBetween(80, canvas.height * 0.38);
+        const bottomLane = randomBetween(canvas.height * 0.62, canvas.height - 80);
+        hazards.push(makeStorm(baseX, topLane, randomBetween(30, 50), 1.05));
+        hazards.push(makeMine(baseX + 120, canvas.height / 2 + randomBetween(-50, 50), randomBetween(15, 22), 1.12));
+        hazards.push(makeStorm(baseX + 260, bottomLane, randomBetween(30, 50), 1.05));
+      }
+    }
+
+    function spawnFuelOrb() {
+      fuelOrbs.push({
+        x: canvas.width + randomBetween(40, 210),
+        y: randomBetween(54, canvas.height - 80),
+        r: 16,
+        speed: randomBetween(170, 250),
+        pulse: Math.random() * Math.PI * 2
+      });
+    }
+
+    function circleRectCollision(circle, rect) {
+      const nearestX = Math.max(rect.x, Math.min(circle.x, rect.x + rect.w));
+      const nearestY = Math.max(rect.y, Math.min(circle.y, rect.y + rect.h));
+      const dx = circle.x - nearestX;
+      const dy = circle.y - nearestY;
+      return dx * dx + dy * dy < circle.r * circle.r;
+    }
+
+    function rectRectCollision(a, b) {
+      return a.x < b.x + b.w &&
+        a.x + a.w > b.x &&
+        a.y < b.y + b.h &&
+        a.y + a.h > b.y;
+    }
+
+    function hazardHitsPlayer(hazard) {
+      if (hazard.type === 'barrier') {
+        return rectRectCollision(player, hazard);
+      }
+      return circleRectCollision(hazard, player);
+    }
+
+    function addBurst(x, y, count, type) {
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x,
+          y,
+          vx: randomBetween(-130, 130),
+          vy: randomBetween(-130, 130),
+          life: randomBetween(0.25, 0.80),
+          maxLife: 0.8,
+          type
+        });
+      }
+    }
+
+    function update(dt) {
+      const forwardLimit = getForwardLimit();
+
+      speedScale += dt * 0.028;
+      const playerCenterX = player.x + player.w / 2;
+      const slowestX = canvas.width * 0.30;
+      throttleAmount = 1 - clamp((playerCenterX - 16) / Math.max(1, slowestX - 16), 0, 1);
+      worldSpeed = speedScale * (0.85 + throttleAmount * 1.55);
+      gameplaySpeed = speedScale * (0.70 + throttleAmount * 2.85);
+
+      score += dt * 18 * gameplaySpeed;
+      player.fuel -= dt * 2.1;
+      player.invincibleTimer = Math.max(0, player.invincibleTimer - dt);
+
+      const moveX = (keys.has('arrowright') || keys.has('d') ? 1 : 0) - (keys.has('arrowleft') || keys.has('a') ? 1 : 0);
+      const moveY = (keys.has('arrowdown') || keys.has('s') ? 1 : 0) - (keys.has('arrowup') || keys.has('w') ? 1 : 0);
+      const mag = Math.hypot(moveX, moveY) || 1;
+
+      const horizontalSpeed = moveX < 0 ? player.speed * 2 : player.speed;
+      player.x += (moveX / mag) * horizontalSpeed * dt;
+      player.y += (moveY / mag) * player.speed * dt;
+      player.x = clamp(player.x, 16, forwardLimit - player.w);
+      player.y = clamp(player.y, 24, canvas.height - player.h - 48);
+
+      spawnTimer -= dt;
+      if (spawnTimer <= 0) {
+        spawnObstaclePattern();
+        spawnTimer = Math.max(0.55, 1.35 - gameplaySpeed * 0.085);
+      }
+
+      fuelTimer -= dt;
+      if (fuelTimer <= 0) {
+        spawnFuelOrb();
+        fuelTimer = Math.max(1.7, 3.9 - speedScale * 0.07);
+      }
+
+      stars.forEach(star => {
+        star.x -= star.s * worldSpeed * dt;
+        if (star.x < -5) {
+          star.x = canvas.width + 5;
+          star.y = Math.random() * canvas.height;
+        }
+      });
+
+      clouds.forEach(cloud => {
+        cloud.x -= cloud.s * worldSpeed * dt;
+        if (cloud.x < -cloud.w - 30) {
+          cloud.x = canvas.width + randomBetween(40, 260);
+          cloud.y = Math.random() * canvas.height;
+        }
+      });
+
+      hazards.forEach(hazard => {
+        hazard.x -= hazard.speed * gameplaySpeed * dt;
+        if (hazard.type === 'barrier') {
+          hazard.pulse += dt * 5;
+        } else {
+          hazard.y += Math.sin(performance.now() / 500 + hazard.spin) * hazard.drift * dt;
+          hazard.spin += dt * 2.4;
+        }
+      });
+
+      fuelOrbs.forEach(orb => {
+        orb.x -= orb.speed * gameplaySpeed * dt;
+        orb.pulse += dt * 6;
+      });
+
+      particles.forEach(particle => {
+        particle.x += particle.vx * dt;
+        particle.y += particle.vy * dt;
+        particle.life -= dt;
+      });
+
+      hazards = hazards.filter(hazard => {
+        if (hazard.type === 'barrier') return hazard.x > -hazard.w - 20;
+        return hazard.x > -hazard.r * 2;
+      });
+      particles = particles.filter(particle => particle.life > 0);
+
+      fuelOrbs = fuelOrbs.filter(orb => {
+        if (circleRectCollision(orb, player)) {
+          player.fuel = Math.min(100, player.fuel + 22);
+          score += 80;
+          addBurst(orb.x, orb.y, 18, 'fuel');
+          return false;
+        }
+        return orb.x > -40;
+      });
+
+      for (const hazard of hazards) {
+        if (hazardHitsPlayer(hazard)) {
+          if (player.invincibleTimer <= 0) {
+            addBurst(player.x + player.w / 2, player.y + player.h / 2, 38, 'hit');
+            endGame();
+          }
+          break;
+        }
+      }
+
+      if (player.fuel <= 0 && gameState === 'playing') {
+        endGame();
+      }
+
+      updateHud();
+    }
+
+    function drawBackground() {
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, '#163155');
+      gradient.addColorStop(1, '#08111f');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      clouds.forEach(cloud => {
+        ctx.fillStyle = `rgba(255,255,255,${cloud.a})`;
+        ctx.beginPath();
+        ctx.ellipse(cloud.x, cloud.y, cloud.w, cloud.h, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      stars.forEach(star => {
+        ctx.globalAlpha = 0.35 + star.r / 3;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 2;
+      for (let y = 80; y < canvas.height; y += 95) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y + Math.sin(y) * 14);
+        ctx.stroke();
+      }
+    }
+
+    function drawJet() {
+      const x = player.x;
+      const y = player.y;
+      const blink = player.invincibleTimer > 0 && Math.floor(player.invincibleTimer * 12) % 2 === 0;
+
+      if (blink) ctx.globalAlpha = 0.45;
+
+      const cx = x + player.w / 2;
+      const cy = y + player.h / 2;
+      const flameLen = 12 + Math.random() * (8 + throttleAmount * 12);
+      const flameColor = throttleAmount > 0.72 ? '#ffe08a' : '#ff9b42';
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(0.82, 0.82);
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.24)';
+      ctx.beginPath();
+      ctx.ellipse(-3, 12, 31, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = flameColor;
+      ctx.beginPath();
+      ctx.moveTo(-29, -4);
+      ctx.lineTo(-29 - flameLen, 0);
+      ctx.lineTo(-29, 4);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      ctx.beginPath();
+      ctx.moveTo(-29, -2);
+      ctx.lineTo(-29 - flameLen * 0.45, 0);
+      ctx.lineTo(-29, 2);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#d7e6fb';
+      ctx.beginPath();
+      ctx.moveTo(3, -2);
+      ctx.lineTo(-11, -15);
+      ctx.lineTo(-24, -16);
+      ctx.lineTo(-9, -4);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(3, 2);
+      ctx.lineTo(-11, 15);
+      ctx.lineTo(-24, 16);
+      ctx.lineTo(-9, 4);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#9eb9db';
+      ctx.beginPath();
+      ctx.moveTo(-16, -4);
+      ctx.lineTo(-28, -13);
+      ctx.lineTo(-19, -3);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(-16, 4);
+      ctx.lineTo(-28, 13);
+      ctx.lineTo(-19, 3);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#89a8cf';
+      ctx.beginPath();
+      ctx.moveTo(-10, -2);
+      ctx.lineTo(-17, -15);
+      ctx.lineTo(-5, -4);
+      ctx.closePath();
+      ctx.fill();
+
+      const fuselageGrad = ctx.createLinearGradient(-29, 0, 31, 0);
+      fuselageGrad.addColorStop(0, '#90a9c9');
+      fuselageGrad.addColorStop(0.45, '#edf5ff');
+      fuselageGrad.addColorStop(1, '#6d9bd0');
+      ctx.fillStyle = fuselageGrad;
+      ctx.beginPath();
+      ctx.moveTo(32, 0);
+      ctx.lineTo(13, -6);
+      ctx.lineTo(-18, -8);
+      ctx.lineTo(-29, -3);
+      ctx.lineTo(-29, 3);
+      ctx.lineTo(-18, 8);
+      ctx.lineTo(13, 6);
+      ctx.closePath();
+      ctx.fill();
+
+      const canopyGrad = ctx.createLinearGradient(1, -5, 16, 4);
+      canopyGrad.addColorStop(0, '#bdf0ff');
+      canopyGrad.addColorStop(1, '#2e6fa8');
+      ctx.fillStyle = canopyGrad;
+      ctx.beginPath();
+      ctx.ellipse(10, 0, 7.4, 4.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.62)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(5, -1.4);
+      ctx.lineTo(26, -0.2);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(30, 62, 100, 0.46)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-20, 0);
+      ctx.lineTo(19, 0);
+      ctx.stroke();
+
+      ctx.fillStyle = '#5e7fa7';
+      ctx.beginPath();
+      ctx.roundRect(-28, -4, 9, 8, 3);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-10, -11);
+      ctx.lineTo(-3, -4);
+      ctx.moveTo(-10, 11);
+      ctx.lineTo(-3, 4);
+      ctx.stroke();
+
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+
+    function drawFuelLabel() {
+      if (gameState !== 'playing' && gameState !== 'paused') return;
+      const label = `${Math.max(0, Math.ceil(player.fuel))}%`;
+      const x = player.x + player.w / 2;
+      const y = player.y + player.h + 14;
+
+      ctx.save();
+      ctx.font = 'bold 13px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const width = ctx.measureText(label).width + 14;
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.44)';
+      ctx.beginPath();
+      ctx.roundRect(x - width / 2, y - 10, width, 20, 10);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffd85a';
+      ctx.fillText(label, x, y + 1);
+      ctx.restore();
+    }
+
+    function drawStorm(hazard) {
+      const gradient = ctx.createRadialGradient(hazard.x - 10, hazard.y - 10, 4, hazard.x, hazard.y, hazard.r);
+      gradient.addColorStop(0, '#ffb0b0');
+      gradient.addColorStop(0.52, '#d92742');
+      gradient.addColorStop(1, '#7d1028');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.r * 0.62, hazard.spin, hazard.spin + Math.PI * 1.4);
+      ctx.stroke();
+    }
+
+    function drawMine(hazard) {
+      ctx.save();
+      ctx.translate(hazard.x, hazard.y);
+      ctx.rotate(hazard.spin);
+      ctx.fillStyle = '#ff4d6d';
+      ctx.strokeStyle = 'rgba(255,255,255,0.42)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, -hazard.r * 1.35);
+      ctx.lineTo(hazard.r * 1.35, 0);
+      ctx.lineTo(0, hazard.r * 1.35);
+      ctx.lineTo(-hazard.r * 1.35, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255,255,255,0.50)';
+      ctx.beginPath();
+      ctx.arc(0, 0, hazard.r * 0.28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawBarrier(hazard) {
+      const glow = 0.38 + Math.sin(hazard.pulse) * 0.12;
+      const gradient = ctx.createLinearGradient(hazard.x, hazard.y, hazard.x + hazard.w, hazard.y);
+      gradient.addColorStop(0, `rgba(255, 70, 100, ${glow})`);
+      gradient.addColorStop(0.5, 'rgba(255, 216, 90, 0.80)');
+      gradient.addColorStop(1, `rgba(255, 70, 100, ${glow})`);
+      ctx.fillStyle = gradient;
+      ctx.fillRect(hazard.x, hazard.y, hazard.w, hazard.h);
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(hazard.x, hazard.y, hazard.w, hazard.h);
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.50)';
+      ctx.beginPath();
+      for (let yy = hazard.y + 18; yy < hazard.y + hazard.h; yy += 36) {
+        ctx.moveTo(hazard.x + hazard.w * 0.25, yy);
+        ctx.lineTo(hazard.x + hazard.w * 0.75, yy + 14);
+      }
+      ctx.stroke();
+    }
+
+    function drawHazard(hazard) {
+      if (hazard.type === 'barrier') drawBarrier(hazard);
+      else if (hazard.type === 'mine') drawMine(hazard);
+      else drawStorm(hazard);
+    }
+
+    function drawFuelOrb(orb) {
+      const glow = 1 + Math.sin(orb.pulse) * 0.12;
+      ctx.save();
+      ctx.translate(orb.x, orb.y);
+      ctx.fillStyle = 'rgba(255, 218, 90, 0.22)';
+      ctx.beginPath();
+      ctx.arc(0, 0, orb.r * 2.1 * glow, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffd85a';
+      ctx.beginPath();
+      ctx.arc(0, 0, orb.r * glow, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#6b4600';
+      ctx.font = 'bold 15px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('F', 0, 1);
+      ctx.restore();
+    }
+
+    function drawParticles() {
+      particles.forEach(particle => {
+        const alpha = Math.max(0, particle.life / particle.maxLife);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = particle.type === 'fuel' ? '#ffd85a' : '#ff6b6b';
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, 3 + alpha * 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    function drawSpeedMeter() {
+      if (gameState !== 'playing' && gameState !== 'paused') return;
+      const meterW = 138;
+      const meterH = 10;
+      const x = player.x + player.w / 2 - meterW / 2;
+      const y = player.y + player.h + 28;
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.46)';
+      ctx.beginPath();
+      ctx.roundRect(x - 8, y - 5, meterW + 16, 20, 10);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+      ctx.beginPath();
+      ctx.roundRect(x, y, meterW, meterH, 999);
+      ctx.fill();
+
+      ctx.fillStyle = throttleAmount > 0.72 ? 'rgba(255, 216, 90, 0.95)' : 'rgba(169, 215, 255, 0.88)';
+      ctx.beginPath();
+      ctx.roundRect(x, y, meterW * throttleAmount, meterH, 999);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawPaused() {
+      if (gameState !== 'paused' || !controlsOverlay.classList.contains('hidden')) return;
+      ctx.fillStyle = 'rgba(0,0,0,0.42)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 54px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Paused', canvas.width / 2, canvas.height / 2);
+      ctx.font = '22px Arial';
+      ctx.fillText('Press P to resume', canvas.width / 2, canvas.height / 2 + 42);
+    }
+
+    function draw() {
+      drawBackground();
+      fuelOrbs.forEach(drawFuelOrb);
+      hazards.forEach(drawHazard);
+      drawParticles();
+      drawJet();
+      drawFuelLabel();
+      drawSpeedMeter();
+      drawPaused();
+    }
+
+    function loop(now) {
+      const dt = Math.min(0.033, (now - lastTime) / 1000);
+      lastTime = now;
+
+      if (gameState === 'playing') update(dt);
+      draw();
+
+      if (gameState === 'playing' || gameState === 'paused') {
+        animationId = requestAnimationFrame(loop);
+      }
+    }
+
+    document.addEventListener('keydown', event => {
+      const key = event.key.toLowerCase();
+
+      if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ', 'w', 'a', 's', 'd'].includes(key)) {
+        event.preventDefault();
+      }
+
+      if (key === ' ') {
+        if (gameState === 'menu' || gameState === 'gameover') startGame();
+      } else if (key === 'p') {
+        togglePause();
+      } else if (key === 'c') {
+        toggleControls();
+      } else if (key === 'escape') {
+        closeControls();
+      } else {
+        keys.add(key);
+      }
+    });
+
+    document.addEventListener('keyup', event => {
+      keys.delete(event.key.toLowerCase());
+    });
+
+    canvas.addEventListener('pointermove', event => {
+      if (gameState !== 'playing') return;
+      if (event.buttons !== 1 && event.pointerType !== 'touch') return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const forwardLimit = getForwardLimit();
+      player.x = clamp((event.clientX - rect.left) * scaleX - player.w / 2, 16, forwardLimit - player.w);
+      player.y = clamp((event.clientY - rect.top) * scaleY - player.h / 2, 24, canvas.height - player.h - 48);
+    });
+
+    canvas.addEventListener('pointerdown', event => {
+      if (gameState === 'menu' || gameState === 'gameover') startGame();
+      canvas.setPointerCapture(event.pointerId);
+      canvas.focus();
+    });
+
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      draw();
+    });
+
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+    howBtn.addEventListener('click', openControls);
+    closeControlsBtn.addEventListener('click', closeControls);
+    controlHint.addEventListener('click', toggleControls);
+
+    resizeCanvas();
+    draw();
+  </script>
+</body>
+</html>
