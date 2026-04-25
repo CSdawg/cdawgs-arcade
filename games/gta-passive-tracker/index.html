@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GTA Passive Business Tracker | C Dawg's Arcade</title>
+  <meta name="description" content="A GTA Online passive business tracker for supplies, stock, Nightclub crates, and sell values.">
+  <link rel="icon" href="thumbnail.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">C Dawg's Arcade Utility</p>
+        <h1>GTA Passive Business Tracker</h1>
+        <p class="hero-copy">Track GTA Online supplies, stock, product value, and Nightclub warehouse crates based on the time you are actually in game.</p>
+      </div>
+      <div class="hero-panel">
+        <span id="statusPill" class="status-pill">Paused</span>
+        <button id="trackingButton" class="primary-toggle">I am in game</button>
+        <p>Last synced: <strong id="lastUpdated">--</strong></p>
+      </div>
+    </header>
+
+    <section class="dashboard-grid" aria-label="Dashboard summary">
+      <div class="summary-card big-number">
+        <span>Total tracked value</span>
+        <strong id="totalValue">$0</strong>
+      </div>
+      <div class="summary-card big-number">
+        <span>Tracked businesses</span>
+        <strong id="activeCount">0</strong>
+      </div>
+      <div class="summary-card alerts-card">
+        <span>Alerts</span>
+        <div id="alerts" class="alerts"><span>Loading...</span></div>
+      </div>
+    </section>
+
+    <section class="settings-panel">
+      <div>
+        <label class="field-label" for="saleMode">Sale value mode</label>
+        <select id="saleMode">
+          <option value="far">Far sale / best value</option>
+          <option value="close">Close sale / local value</option>
+        </select>
+      </div>
+      <label class="check-row">
+        <input id="carWashCashBonus" type="checkbox">
+        <span>Apply Hands On Car Wash +35% cash boost</span>
+      </label>
+      <label class="check-row">
+        <input id="smokeWeedBonus" type="checkbox">
+        <span>Apply Smoke on the Water +35% weed boost</span>
+      </label>
+      <div class="backup-actions">
+        <button id="exportData">Export backup</button>
+        <label class="import-button">
+          Import backup
+          <input id="importInput" type="file" accept="application/json">
+        </label>
+        <button id="resetAll" class="danger-button">Reset all</button>
+      </div>
+    </section>
+
+    <main>
+      <section class="section-head">
+        <div>
+          <p class="eyebrow">Supply based businesses</p>
+          <h2>Supplies, product, and sell value</h2>
+        </div>
+        <p>Set each current supply/product level, then hit <strong>I am in game</strong>. Tracking pauses when you turn it off.</p>
+      </section>
+      <div id="businessCards" class="business-grid"></div>
+
+      <section class="nightclub-card" aria-label="Nightclub tracker">
+        <div class="section-head compact">
+          <div>
+            <p class="eyebrow">Nightclub warehouse</p>
+            <h2>Technician crate tracker</h2>
+          </div>
+          <label class="switch-label">
+            <input id="nightclubOwned" type="checkbox">
+            <span>Track Nightclub</span>
+          </label>
+        </div>
+
+        <div class="nightclub-controls">
+          <label class="check-row">
+            <input id="nightclubEquipment" type="checkbox">
+            <span>Equipment upgrade installed</span>
+          </label>
+          <div>
+            <label class="field-label" for="nightclubFloors">Warehouse floors</label>
+            <select id="nightclubFloors">
+              <option value="1">1 floor</option>
+              <option value="2">2 floors</option>
+              <option value="3">3 floors</option>
+              <option value="4">4 floors</option>
+              <option value="5">5 floors</option>
+            </select>
+          </div>
+          <button id="nightclubReset">Sold / reset crates</button>
+        </div>
+
+        <div class="nightclub-summary">
+          <div><span>Gross value</span><strong id="nightclubValue">$0</strong></div>
+          <div><span>After Tony cut</span><strong id="nightclubNet">$0</strong></div>
+          <div><span>Crates</span><strong id="nightclubCrates">0 / 0</strong></div>
+          <div><span>Warehouse full</span><strong id="nightclubPercent">0%</strong></div>
+        </div>
+        <div class="progress large"><i id="nightclubProgress"></i></div>
+
+        <div id="nightclubGoods" class="nightclub-goods"></div>
+      </section>
+
+      <section class="notes-panel">
+        <div>
+          <p class="eyebrow">Rate notes</p>
+          <h2>Built for easy tuning</h2>
+          <div id="rateSummary"></div>
+        </div>
+        <div class="tips-box">
+          <h3>How to use it</h3>
+          <ol>
+            <li>Turn on the businesses you own.</li>
+            <li>Set upgrades, supplies, and current product.</li>
+            <li>Press <strong>I am in game</strong> when you load into GTA Online.</li>
+            <li>Turn tracking off when you leave GTA Online.</li>
+          </ol>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="business-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
